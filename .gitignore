@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Local config and runtime state
+.env
+.env.*
+!.env.example
+state.json
+*.log
+
+# Backups and local artifacts
+backups/
+.DS_Store
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Validator and private key material
+*.pem
+*.key
+*keypair*.json
+*identity*.json
+*staked-identity*.json
+*vote-account*.json
+id_*

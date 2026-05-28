@@ -1,0 +1,18 @@
+[Unit]
+Description=Solana Validator Version Check Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sol
+WorkingDirectory=/home/sol/version-check-bot
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/sol/version-check-bot/venv/bin/python -u bot.py
+Restart=on-failure
+RestartSec=30
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
