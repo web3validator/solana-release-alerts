@@ -1,14 +1,14 @@
 [Unit]
-Description=Solana Validator Version Check Bot
+Description=Solana Release Alerts Bot
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-User=sol
-WorkingDirectory=/home/sol/version-check-bot
+User=%i
+WorkingDirectory=/home/%i/solana-release-alerts
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/home/sol/version-check-bot/venv/bin/python -u bot.py
+ExecStart=/home/%i/solana-release-alerts/venv/bin/python -u bot.py
 Restart=on-failure
 RestartSec=30
 StandardOutput=journal

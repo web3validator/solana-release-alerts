@@ -105,15 +105,15 @@ Alerts also include an inline **📊 Status** button.
 
 ## 🛠️ Systemd
 
-An example service file is included: [`version-check-bot.service`](version-check-bot.service).
+An example template service is included: [`solana-release-alerts@.service`](solana-release-alerts@.service).
 
-Adjust `User`, `WorkingDirectory`, and `ExecStart` for your server, then install it:
+Install it for the current Linux user:
 
 ```bash
-sudo cp version-check-bot.service /etc/systemd/system/solana-release-alerts.service
+sudo cp solana-release-alerts@.service /etc/systemd/system/solana-release-alerts@.service
 sudo systemctl daemon-reload
-sudo systemctl enable --now solana-release-alerts
-sudo journalctl -u solana-release-alerts -f
+sudo systemctl enable --now solana-release-alerts@$USER
+sudo journalctl -u solana-release-alerts@$USER -f
 ```
 
 ## 🔐 Security notes
@@ -141,7 +141,7 @@ The bot only needs a vote account public key and does not need access to private
 ├── notifier.py                  # Telegram message formatting and delivery
 ├── state.py                     # Local alert throttling state
 ├── requirements.txt
-├── version-check-bot.service    # Example systemd service
+├── solana-release-alerts@.service # Example systemd template service
 └── .env.example
 ```
 
