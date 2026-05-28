@@ -79,12 +79,23 @@ TELEGRAM_TOKEN=your_telegram_bot_token
 TELEGRAM_CHAT_ID=your_telegram_chat_id
 MAINNET_VOTE_PUBKEY=your_mainnet_vote_account_pubkey
 TESTNET_VOTE_PUBKEY=
-SOLANA_BIN=solana
-CHECK_INTERVAL_SECONDS=1800
-RPC_ERROR_ALERT_ATTEMPTS=3
 ```
 
 `TESTNET_VOTE_PUBKEY` is optional. Leave it empty if you only want mainnet checks.
+
+Default behavior:
+
+- check interval: 1 hour
+- RPC error alert: after 3 consecutive failures
+- Solana CLI binary: `solana`
+
+Optional overrides:
+
+```env
+CHECK_INTERVAL_SECONDS=3600
+RPC_ERROR_ALERT_ATTEMPTS=3
+SOLANA_BIN=solana
+```
 
 ## ▶️ Run
 
