@@ -19,6 +19,7 @@ A lightweight operator bot that checks your validator version against Solana Fou
 - ⏱️ Shows current epoch and estimated time left in the epoch.
 - 🧯 Suppresses noisy transient RPC failures with retry thresholds.
 - 📊 Supports manual `/status` checks and an inline Telegram status button.
+- 🔕 Per-network **Mute** button with a chosen duration (1h – 7d).
 - 🔐 Does **not** require private keys.
 
 ## 🧭 Why this is useful
@@ -114,6 +115,14 @@ On first start, the bot validates required configuration and then begins periodi
 
 Alerts also include an inline **📊 Status** button.
 
+### 🔕 Muting alerts
+
+Every alert has a **🔕 Mute** button for its network (mainnet and testnet are muted separately).
+Tap it and pick how long: **1h, 6h, 12h, 1d, 3d or 7d**. While muted, checks keep running and
+are logged, but no alerts are sent for that network. The button then turns into
+**🔔 Unmute (muted till …)**, and `/status` shows the mute end time. Muting expires on its own
+and survives bot restarts (stored in `state.json`).
+
 ## 🛠️ Systemd
 
 An example template service is included: [`solana-release-alerts@.service`](solana-release-alerts@.service).
@@ -149,8 +158,9 @@ The bot only needs a vote account public key and does not need access to private
 ├── bot.py                       # Main loop, setup wizard, Telegram polling
 ├── checker.py                   # Solana CLI + required version checks
 ├── config.py                    # Environment-based configuration
+├── mute.py                      # Per-network alert muting (inline buttons)
 ├── notifier.py                  # Telegram message formatting and delivery
-├── state.py                     # Local alert throttling state
+├── state.py                     # Local alert throttling and mute state
 ├── requirements.txt
 ├── solana-release-alerts@.service # Example systemd template service
 └── .env.example

@@ -1,3 +1,5 @@
+import time
+
 import requests
 
 from config import TELEGRAM_CHAT_ID, TELEGRAM_TOKEN
@@ -30,12 +32,32 @@ def _send(text: str, reply_markup: dict = None) -> bool:
         resp.raise_for_status()
         return True
     except Exception as e:
-        print(f"[notifier] Failed to send message: {e}")
+        print(f"[notifier] Failed to send message: {_redact(e)}")
         return False
 
 
-def _status_button() -> dict:
-    return {"inline_keyboard": [[{"text": "📊 Status", "callback_data": "status"}]]}
+def _redact(error: Exception) -> str:
+    # requests puts the full URL (with the bot token) into HTTP errors.
+    return str(error).replace(TELEGRAM_TOKEN, "<token>") if TELEGRAM_TOKEN else str(error)
+
+
+def _keyboard(result: dict, vote_pubkey: str) -> dict:
+    from mute import keyboard
+    from state import get_mute_until
+
+    return keyboard(_label(result), get_mute_until(vote_pubkey))
+
+
+def edit_keyboard(chat_id: str, message_id: int, reply_markup: dict) -> bool:
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/editMessageReplyMarkup"
+    payload = {"chat_id": chat_id, "message_id": message_id, "reply_markup": reply_markup}
+    try:
+        resp = requests.post(url, json=payload, timeout=10)
+        # 400 "message is not modified" is harmless (double tap on the same button).
+        return resp.ok or "not modified" in resp.text
+    except Exception as e:
+        print(f"[notifier] Failed to edit keyboard: {_redact(e)}")
+        return False
 
 
 def _label(result: dict) -> str:
@@ -77,7 +99,7 @@ def send_alert(result: dict, vote_pubkey: str) -> bool:
             f"<b>Time left in epoch:</b> {time_left}"
         )
 
-    return _send(text, _status_button())
+    return _send(text, _keyboard(result, vote_pubkey))
 
 
 def send_ok(result: dict, vote_pubkey: str) -> bool:
@@ -95,7 +117,7 @@ def send_ok(result: dict, vote_pubkey: str) -> bool:
         f"<b>Epoch:</b> {epoch}"
     )
 
-    return _send(text, _status_button())
+    return _send(text, _keyboard(result, vote_pubkey))
 
 
 def send_status(result: dict, vote_pubkey: str) -> bool:
@@ -129,12 +151,22 @@ def send_status(result: dict, vote_pubkey: str) -> bool:
             f"<b>Time left in epoch:</b> {time_left}"
         )
 
-    return _send(text, _status_button())
+    from mute import fmt_until
+    from state import get_mute_until
+
+    mute_until = get_mute_until(vote_pubkey)
+    if mute_until > time.time():
+        text += f"\n\n🔕 <b>Alerts muted until</b> {fmt_until(mute_until)}"
+
+    return _send(text, _keyboard(result, vote_pubkey))
 
 
-def answer_callback(callback_query_id: str) -> None:
+def answer_callback(callback_query_id: str, text: str = "") -> None:
     try:
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/answerCallbackQuery"
-        requests.post(url, json={"callback_query_id": callback_query_id}, timeout=5)
+        payload = {"callback_query_id": callback_query_id}
+        if text:
+            payload["text"] = text
+        requests.post(url, json=payload, timeout=5)
     except Exception:
         pass

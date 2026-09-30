@@ -17,6 +17,7 @@ env/
 .env.*
 !.env.example
 state.json
+state.json.tmp
 *.log
 
 # Backups and local artifacts

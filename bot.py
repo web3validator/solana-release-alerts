@@ -118,18 +118,65 @@ def polling_loop(networks: list):
                                 net["cluster"], net["rpc_flag"], net["pubkey"]
                             )
                             send_status(result, net["pubkey"])
+                    elif chat_id == str(TELEGRAM_CHAT_ID):
+                        handle_mute_callback(callback, networks)
 
         except Exception as e:
-            print(f"[polling] Error: {e}")
+            print(f"[polling] Error: {_redact(e)}")
             time.sleep(5)
+
+
+def _redact(error: Exception) -> str:
+    # requests puts the full getUpdates URL (with the bot token) into HTTP errors.
+    from config import TELEGRAM_TOKEN
+
+    return str(error).replace(TELEGRAM_TOKEN, "<token>") if TELEGRAM_TOKEN else str(error)
+
+
+def handle_mute_callback(callback: dict, networks: list) -> bool:
+    """Mute buttons: open the duration menu, mute, unmute, or go back."""
+    from mute import fmt_until, keyboard, mute_menu, parse
+    from notifier import answer_callback, edit_keyboard
+    from state import clear_mute, get_mute_until, set_mute
+
+    by_label = {net["label"]: net for net in networks}
+    parsed = parse(callback.get("data", ""), by_label)
+    if not parsed:
+        return False
+    action, label, seconds = parsed
+    pubkey = by_label[label]["pubkey"]
+
+    note = ""
+    if action == "mm":
+        markup = mute_menu(label)
+    elif action == "m":
+        until = set_mute(pubkey, seconds)
+        markup = keyboard(label, until)
+        note = f"🔕 {label} alerts muted until {fmt_until(until)}"
+        print(f"[bot:{label}] Alerts muted until {fmt_until(until)}")
+    elif action == "um":
+        clear_mute(pubkey)
+        markup = keyboard(label, 0.0)
+        note = f"🔔 {label} alerts unmuted"
+        print(f"[bot:{label}] Alerts unmuted")
+    else:
+        markup = keyboard(label, get_mute_until(pubkey))
+
+    answer_callback(callback.get("id"), note)
+    message = callback.get("message", {})
+    if message.get("message_id") is not None:
+        edit_keyboard(message["chat"]["id"], message["message_id"], markup)
+    return True
 
 
 def main_loop():
     from checker import run_check
     from config import CHECK_INTERVAL_SECONDS, RPC_ERROR_ALERT_ATTEMPTS
+    from mute import fmt_until
     from notifier import send_alert, send_ok
     from state import (
         get_last_ok_sent,
+        get_mute_until,
         record_alert,
         record_ok,
         record_rpc_error,
@@ -184,6 +231,14 @@ def main_loop():
                             continue
                     else:
                         reset_rpc_errors(pubkey)
+
+                    mute_until = get_mute_until(pubkey)
+                    if mute_until > time.time():
+                        print(
+                            f"[bot:{net['label']}] Muted until {fmt_until(mute_until)}, "
+                            f"alert suppressed: {error or 'version not updated'}"
+                        )
+                        continue
 
                     if should_alert(pubkey, remaining):
                         sent = send_alert(result, pubkey)
